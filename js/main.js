@@ -67,5 +67,36 @@ function setMap(){
           })
           .attr("d", path);
 
+      //variables for data join
+      var attrArray = ["GEOID", "STATE", "ENROLL", "TOTAL_REVENUE", "FEDERAL_REVENUE",
+      "STATE_REVENUE", "LOCAL_REVENUE", "TOTAL_EXPENDITURE", "INSTRUCTION_EXPENDITURE",
+      "SUPPORT_SERVICES_EXPENDITURE", "AVG_READING_4_SCORE", "AVG_READING_8_SCORE"]
+
+      //loop through csv to assign each set of values to geojson region
+      for (var i=0; i<csvData.length; i++){
+        var csvState = csvData[i]; //assign csv row to variable
+        var csvKey = csvState.GEOID; //the primary key for states
+        console.log(csvState.STATE);
+
+        //loop through geojson states  to find correct state
+        for (var a=0; a<usa.length;a++){
+          var geojsonProps = usa[a].properties; //the properties for current state in geojson
+          var geojsonKey = geojsonProps.GEOID;
+          //console.log(geojsonKey);
+
+          //when keys match, transfer csv data to geojson properties objects
+          if (geojsonKey==csvKey){
+            //assign all attributes and values
+            attrArray.forEach(function(attr){
+
+              //console.log(csvState[attr]);
+              var val = parseInt(csvState[attr]); //get csv attribute value
+              //console.log(attr + ": "+val);
+              geojsonProps[attr] = val;
+              console.log(geojsonProps);
+            });
+          };
+        };
+      };
     };
 };
