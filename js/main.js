@@ -1,4 +1,13 @@
 //script to execute when window is loaded
+(function(){
+//pseudo-global variables
+//variables for data join
+var attrArray = ["GEOID", "ENROLL", "TOTAL_REVENUE", "FEDERAL_REVENUE",
+"STATE_REVENUE", "LOCAL_REVENUE", "TOTAL_EXPENDITURE", "INSTRUCTION_EXPENDITURE",
+"SUPPORT_SERVICES_EXPENDITURE", "AVG_READING_4_SCORE", "AVG_READING_8_SCORE",
+"AVG_MATH_4_SCORE", "AVG_MATH_8_SCORE"];
+
+var expressed = attrArray[0];
 
 window.onload = setMap();
 
@@ -67,12 +76,6 @@ function setMap(){
           })
           .attr("d", path);
 
-      //variables for data join
-      var attrArray = ["GEOID", "ENROLL", "TOTAL_REVENUE", "FEDERAL_REVENUE",
-      "STATE_REVENUE", "LOCAL_REVENUE", "TOTAL_EXPENDITURE", "INSTRUCTION_EXPENDITURE",
-      "SUPPORT_SERVICES_EXPENDITURE", "AVG_READING_4_SCORE", "AVG_READING_8_SCORE",
-      "AVG_MATH_4_SCORE", "AVG_MATH_8_SCORE"]
-
       //loop through csv to assign each set of values to geojson region
       for (var i=0; i<csvData.length; i++){
         var csvState = csvData[i]; //assign csv row to variable
@@ -91,8 +94,10 @@ function setMap(){
               var val = parseInt(csvState[attr]); //get csv attribute value
               geojsonProps[attr] = val; //add that value to the geojson properties
             });
+          console.log(geojsonProps);
           };
         };
       };
     };
-};
+  };
+})();
