@@ -44,22 +44,7 @@ function setMap(){
 
     function callback(error, csvData, usa){
 
-      //create graticule generator
-      var graticule = d3.geo.graticule()
-          .step([5,5]); //lines every 5 degrees
-
-      //create graticule background
-      var gratBackground = map.append("path")
-          .datum(graticule.outline())
-          .attr("class", "gratBackground")
-          .attr("d", path)
-
-      var gratLines = map.selectAll(".gratLines")
-          .data(graticule.lines())
-          .enter()
-          .append("path")
-          .attr("class", "gratLines")
-          .attr("d", path)
+      setGraticule(map, path);
 
       //translate us topojson
       var usa = topojson.feature(usa, usa.objects.US_states).features;
@@ -76,28 +61,54 @@ function setMap(){
           })
           .attr("d", path);
 
-      //loop through csv to assign each set of values to geojson region
-      for (var i=0; i<csvData.length; i++){
-        var csvState = csvData[i]; //assign csv row to variable
-        var csvKey = csvState.GEOID; //the primary key for states
+      //join data
+      stateData = joinData(usa, csvData);
+    };
+  };// end of setMap function
 
-        //loop through geojson states  to find correct state
-        for (var a=0; a<usa.length;a++){
-          var geojsonProps = usa[a].properties; //the properties for current state in geojson
-          var geojsonKey = geojsonProps.GEOID;
-          //console.log(geojsonKey);
+  function setGraticule(map, path){
+    //create graticule generator
+    var graticule = d3.geo.graticule()
+        .step([5,5]); //lines every 5 degrees
 
-          //when keys match, transfer csv data to geojson properties objects
-          if (geojsonKey==csvKey){
-            //assign all attributes and values
-            attrArray.forEach(function(attr){
-              var val = parseInt(csvState[attr]); //get csv attribute value
-              geojsonProps[attr] = val; //add that value to the geojson properties
-            });
-          console.log(geojsonProps);
-          };
+    //create graticule background
+    var gratBackground = map.append("path")
+        .datum(graticule.outline())
+        .attr("class", "gratBackground")
+        .attr("d", path);
+
+    var gratLines = map.selectAll(".gratLines")
+        .data(graticule.lines())
+        .enter()
+        .append("path")
+        .attr("class", "gratLines")
+        .attr("d", path);
+  };
+
+  function joinData(usa, csvData){
+    //loop through csv to assign each set of values to geojson region
+    for (var i=0; i<csvData.length; i++){
+      var csvState = csvData[i]; //assign csv row to variable
+      var csvKey = csvState.GEOID; //the primary key for states
+
+      //loop through geojson states  to find correct state
+      for (var a=0; a<usa.length;a++){
+        var geojsonProps = usa[a].properties; //the properties for current state in geojson
+        var geojsonKey = geojsonProps.GEOID;
+        //console.log(geojsonKey);
+
+        //when keys match, transfer csv data to geojson properties objects
+        if (geojsonKey==csvKey){
+          //assign all attributes and values
+          attrArray.forEach(function(attr){
+            var val = parseFloat(csvState[attr]); //get csv attribute value
+            geojsonProps[attr] = val; //add that value to the geojson properties
+          });
+        //console.log(geojsonProps);
         };
       };
     };
+   console.log(usa);
+   return usa;
   };
 })();
