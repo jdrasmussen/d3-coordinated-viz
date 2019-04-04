@@ -7,7 +7,7 @@ var attrArray = ["GEOID", "ENROLL", "TOTAL_REVENUE", "FEDERAL_REVENUE",
 "SUPPORT_SERVICES_EXPENDITURE", "AVG_READING_4_SCORE", "AVG_READING_8_SCORE",
 "AVG_MATH_4_SCORE", "AVG_MATH_8_SCORE"];
 
-var expressed = attrArray[0];
+var expressed = attrArray[2];
 
 window.onload = setMap();
 
@@ -49,20 +49,14 @@ function setMap(){
       //translate us topojson
       var usa = topojson.feature(usa, usa.objects.US_states).features;
 
-      //console.log(usa);
-
-      //add US states to map
-      var states = map.selectAll(".states")
-          .data(usa)
-          .enter()
-          .append("path")
-          .attr("class", function(d){
-            return "states " + d.properties.GEOID;
-          })
-          .attr("d", path);
+      //create the color scale
+      var colorScale = makeColorScale(csvData);
 
       //join data
       stateData = joinData(usa, csvData);
+
+      //function to create enumeration units
+      setEnumerationUnits(usa, map, path, colorScale);
     };
   };// end of setMap function
 
@@ -83,7 +77,7 @@ function setMap(){
         .append("path")
         .attr("class", "gratLines")
         .attr("d", path);
-  };
+  }; // end of setGraticule
 
   function joinData(usa, csvData){
     //loop through csv to assign each set of values to geojson region
@@ -110,5 +104,69 @@ function setMap(){
     };
    console.log(usa);
    return usa;
+ };// end of joinData
+
+ function setEnumerationUnits(usa, map, path, colorScale){
+
+         //add US states to map
+         var states = map.selectAll(".states")
+             .data(usa)
+             .enter()
+             .append("path")
+             .attr("class", function(d){
+               return "states " + d.properties.GEOID;
+             })
+             .attr("d", path)
+             .style("fill", function(d){
+               return choropleth(d.properties, colorScale);
+             });
+ };
+
+ function makeColorScale(data){
+   var colorClasses = [
+       "#D4B9DA",
+       "#C994C7",
+       "#DF65B0",
+       "#DD1C77",
+       "#980043"
+   ];
+
+   //create color scale generator
+   var colorScale = d3.scale.threshold()
+      .range(colorClasses);
+
+  //build array of all values of the expressed attribute
+  var domainArray = [];
+  for (var i=0; i<data.length; i++){
+    var val = parseFloat(data[i][expressed]);
+    domainArray.push(val);
   };
+
+  //cluster data using ckmeans clustering algorithm to create natural breaks
+  var clusters = ss.ckmeans(domainArray, 5);
+  console.log(clusters);
+
+  //reset domain array to cluster minimums
+  domainArray = clusters.map(function(d){
+    return d3.min(d);
+  });
+  //remove first value from domain array to create class break points
+  domainArray.shift();
+
+  //assign array of expressed values as scale domain
+  colorScale.domain(domainArray);
+
+  return colorScale;
+};
+
+function choropleth(props, colorScale){
+  //make sure attribute value is a number
+  var val = parseFloat(props[expressed]);
+  //if attribute value exists, assign a color, otherwise assign gray
+  if (typeof val == 'number' && !isNaN(val)){
+    return colorScale(val);
+  } else {
+    return "#CCC";
+  };
+};
 })();

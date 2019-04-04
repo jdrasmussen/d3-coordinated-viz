@@ -1,7 +1,8 @@
 /* stylesheet by Joe Rasmussen, 2019*/
 .states {
-  fill: #776274;
-  stroke-width: 2px;
+  stroke: #000;
+  stroke-width: 0.5px;
+  stroke-linecap: round;
 }
 
 .gratLines {
