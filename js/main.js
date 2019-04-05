@@ -7,7 +7,7 @@ var attrArray = ["GEOID", "ENROLL", "TOTAL_REVENUE", "FEDERAL_REVENUE",
 "SUPPORT_SERVICES_EXPENDITURE", "AVG_READING_4_SCORE", "AVG_READING_8_SCORE",
 "AVG_MATH_4_SCORE", "AVG_MATH_8_SCORE"];
 
-var expressed = attrArray[2];
+var expressed = attrArray[7];
 
 window.onload = setMap();
 
@@ -15,7 +15,7 @@ window.onload = setMap();
 function setMap(){
 
     //map frame dimensions
-    var width = 910,
+    var width =900,
         height = 460;
 
     //create new svg container for the map
@@ -57,6 +57,9 @@ function setMap(){
 
       //function to create enumeration units
       setEnumerationUnits(usa, map, path, colorScale);
+
+      //add coordinated viz to the map - bar chart
+      setChart(csvData, colorScale);
     };
   };// end of setMap function
 
@@ -95,7 +98,7 @@ function setMap(){
         if (geojsonKey==csvKey){
           //assign all attributes and values
           attrArray.forEach(function(attr){
-            var val = parseFloat(csvState[attr]); //get csv attribute value
+            var val = parseFloat(csvState[attr]).toFixed(2); //get csv attribute value
             geojsonProps[attr] = val; //add that value to the geojson properties
           });
         //console.log(geojsonProps);
@@ -124,11 +127,11 @@ function setMap(){
 
  function makeColorScale(data){
    var colorClasses = [
-       "#D4B9DA",
-       "#C994C7",
-       "#DF65B0",
-       "#DD1C77",
-       "#980043"
+     "#edf8e9",
+     "#bae4b3",
+     "#74c476",
+     "#31a354",
+     "#006d2c"
    ];
 
    //create color scale generator
@@ -168,5 +171,86 @@ function choropleth(props, colorScale){
   } else {
     return "#CCC";
   };
+};
+
+function setChart(csvData, colorScale){
+  //set chart dimensions
+  var chartWidth = 1000,
+      chartHeight = 400;
+      leftPadding = 25,
+      rightPadding = 2,
+      topBottomPadding = 5
+      chartInnerWidth = chartWidth - leftPadding - rightPadding,
+      chartInnerHeight = chartHeight - topBottomPadding * 2,
+      translate = "translate("+ leftPadding +"," + topBottomPadding+ ")";
+
+  //create second svg element for the chart
+  var chart = d3.select("body")
+      .append("svg")
+      .attr("width", chartWidth)
+      .attr("height", chartHeight)
+      .attr("class", "chart");
+
+  //create a rectangle for chart background fill
+  var chartBackground = chart.append("rect")
+      .attr("class", "chartBackground")
+      .attr("width", chartInnerWidth)
+      .attr("height", chartInnerHeight)
+      .attr("transform", translate);
+
+  //create linear scale for proportional bar sizing
+  var yScale = d3.scale.linear()
+      .range([390, 0])
+      .domain([0, 17]); // set for min/max values of INSTRUCTION_EXPENDITURE
+
+  //set bars for each state
+  var bars = chart.selectAll(".bars")
+      .data(csvData)
+      .enter()
+      .append("rect")
+      .sort(function(a, b){
+        return b[expressed]-a[expressed]
+      })
+      .attr("class", function(d){
+        return "bars " + d.GEOID;
+      })
+      .attr("width", chartInnerWidth/csvData.length-1)
+      .attr("x", function(d, i){
+        return i * (chartInnerWidth/csvData.length) + leftPadding;
+      })
+      .attr("height", function(d){
+        return 390 -  yScale(parseFloat(d[expressed]));
+      })
+      .attr("y", function(d){
+        return yScale(parseFloat(d[expressed])) + topBottomPadding;
+      })
+      .style("fill", function(d){
+        return choropleth(d, colorScale);
+      });
+
+  //create a text element for the chart title
+  var chartTitle = chart.append("text")
+      .attr("x", 80)
+      .attr("y", 40)
+      .attr("class", "chartTitle")
+      .text(expressed + " per student");
+
+  //create a vertical axis generator
+  var yAxis = d3.svg.axis()
+      .scale(yScale)
+      .orient("left");
+
+  //place yAxis
+  var axis = chart.append("g")
+      .attr("class", "axis")
+      .attr("transform", translate)
+      .call(yAxis);
+
+  //create frame for chart border
+  var chartFrame = chart.append("rect")
+      .attr("class", "chartFrame")
+      .attr("width", chartInnerWidth)
+      .attr("height", chartInnerHeight)
+      .attr("transform", translate);
 };
 })();
