@@ -9,6 +9,20 @@ var attrArray = ["GEOID", "ENROLL", "TOTAL_REVENUE", "FEDERAL_REVENUE",
 
 var expressed = attrArray[7];
 
+//set chart dimensions
+var chartWidth = 900,
+    chartHeight = 460;
+    leftPadding = 25,
+    rightPadding = 2,
+    topBottomPadding = 5
+    chartInnerWidth = chartWidth - leftPadding - rightPadding,
+    chartInnerHeight = chartHeight - topBottomPadding * 2,
+    translate = "translate("+ leftPadding +"," + topBottomPadding+ ")";
+//create linear scale for proportional bar sizing
+var yScale = d3.scale.linear()
+    .range([450, 0])
+    .domain([0, 25]); // set for min/max values of TOTAL_REVENUE
+
 window.onload = setMap();
 
 //set up choropleth map
@@ -16,7 +30,7 @@ function setMap(){
 
     //map frame dimensions
     var width =900,
-        height = 460;
+        height = 475;
 
     //create new svg container for the map
     var map = d3.select("body")
@@ -30,7 +44,7 @@ function setMap(){
         // .center([0,37.24])
         // .rotate([99.18, 0, 0])
         // .parallels([29.5, 45.5])
-        .scale(1000)
+        .scale(999)
         .translate([width/2, height/2]);
 
     var path = d3.geo.path()
@@ -57,6 +71,8 @@ function setMap(){
 
       //function to create enumeration units
       setEnumerationUnits(usa, map, path, colorScale);
+
+      createDropdown(csvData);
 
       //add coordinated viz to the map - bar chart
       setChart(csvData, colorScale);
@@ -174,15 +190,7 @@ function choropleth(props, colorScale){
 };
 
 function setChart(csvData, colorScale){
-  //set chart dimensions
-  var chartWidth = 1000,
-      chartHeight = 400;
-      leftPadding = 25,
-      rightPadding = 2,
-      topBottomPadding = 5
-      chartInnerWidth = chartWidth - leftPadding - rightPadding,
-      chartInnerHeight = chartHeight - topBottomPadding * 2,
-      translate = "translate("+ leftPadding +"," + topBottomPadding+ ")";
+
 
   //create second svg element for the chart
   var chart = d3.select("body")
@@ -198,10 +206,7 @@ function setChart(csvData, colorScale){
       .attr("height", chartInnerHeight)
       .attr("transform", translate);
 
-  //create linear scale for proportional bar sizing
-  var yScale = d3.scale.linear()
-      .range([390, 0])
-      .domain([0, 17]); // set for min/max values of INSTRUCTION_EXPENDITURE
+
 
   //set bars for each state
   var bars = chart.selectAll(".bars")
@@ -214,26 +219,14 @@ function setChart(csvData, colorScale){
       .attr("class", function(d){
         return "bars " + d.GEOID;
       })
-      .attr("width", chartInnerWidth/csvData.length-1)
-      .attr("x", function(d, i){
-        return i * (chartInnerWidth/csvData.length) + leftPadding;
-      })
-      .attr("height", function(d){
-        return 390 -  yScale(parseFloat(d[expressed]));
-      })
-      .attr("y", function(d){
-        return yScale(parseFloat(d[expressed])) + topBottomPadding;
-      })
-      .style("fill", function(d){
-        return choropleth(d, colorScale);
-      });
+      .attr("width", chartInnerWidth/csvData.length-1);
 
   //create a text element for the chart title
   var chartTitle = chart.append("text")
       .attr("x", 80)
       .attr("y", 40)
       .attr("class", "chartTitle")
-      .text(expressed + " per student");
+
 
   //create a vertical axis generator
   var yAxis = d3.svg.axis()
@@ -252,5 +245,74 @@ function setChart(csvData, colorScale){
       .attr("width", chartInnerWidth)
       .attr("height", chartInnerHeight)
       .attr("transform", translate);
-};
+
+  updateChart(bars, csvData.length, colorScale);
+}; //end of setChart
+
+function createDropdown(csvData){
+    //add select Element
+    var dropdown = d3.select("body")
+        .append("select")
+        .attr("class", "dropdown")
+        .on("change", function(){
+          //console.log("the attribute selection changed");
+          changeAttribute(this.value, csvData)
+        });
+
+    //add initial option
+    var titleOption = dropdown.append("option")
+        .attr("class", "titleOption")
+        .attr("disabled", "true")
+        .text("Select Attribute");
+
+    var attrOptions = dropdown.selectAll("attrOptions")
+        .data(attrArray)
+        .enter()
+        .append("option")
+        .attr("value", function(d){return d})
+        .text(function(d){return d});
+};//end of createDropdown
+
+function changeAttribute(attribute, csvData){
+  //change the expressed attribute
+  expressed = attribute;
+
+  //recreate the color scale
+  var colorScale = makeColorScale(csvData);
+
+  //recolor enumeration units
+  var states = d3.selectAll(".states")
+      .style("fill", function(d){
+        return choropleth(d.properties, colorScale)
+      });
+
+  var bars = d3.selectAll(".bars")
+      //re-sort bars
+      .sort(function(a, b){
+
+        return b[expressed]-a[expressed]
+      });
+
+  updateChart(bars, csvData.length, colorScale);
+};//end of changeAttribute
+
+function updateChart(bars, n, colorScale){
+    //position bars
+    bars.attr("x", function(d,i){
+      return i * (chartInnerWidth / n) + leftPadding;
+    })
+    .attr("height", function(d, i){
+      return 450 - yScale(parseFloat(d[expressed]));
+    })
+    .attr("y", function(d, i){
+      return yScale(parseFloat(d[expressed])) +topBottomPadding;
+    })
+    //recolor bars
+    .style("fill", function(d){
+      return choropleth(d, colorScale);
+    });
+
+    var chartTitle = d3.select(".chartTitle")
+        .text(expressed + " per student");
+}; //end of updateChart
 })();
