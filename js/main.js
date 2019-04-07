@@ -114,7 +114,7 @@ function setMap(){
         if (geojsonKey==csvKey){
           //assign all attributes and values
           attrArray.forEach(function(attr){
-            var val = parseFloat(csvState[attr]).toFixed(2); //get csv attribute value
+            var val = parseFloat(csvState[attr]); //get csv attribute value
             geojsonProps[attr] = val; //add that value to the geojson properties
           });
         //console.log(geojsonProps);
@@ -133,12 +133,22 @@ function setMap(){
              .enter()
              .append("path")
              .attr("class", function(d){
-               return "states " + d.properties.GEOID;
+               return "states a" + d.properties.GEOID;
              })
              .attr("d", path)
              .style("fill", function(d){
                return choropleth(d.properties, colorScale);
-             });
+             })
+             .on("mouseover", function(d){
+               highlight(d.properties);
+             })
+             .on("mouseout", function(d){
+               dehighlight(d.properties)
+             })
+             .on("mousemove", moveLabel);
+
+          var desc = states.append("desc")
+              .text('{"stroke": "#000", "stroke-width": "0.5px"}');
  };
 
  function makeColorScale(data){
@@ -163,7 +173,6 @@ function setMap(){
 
   //cluster data using ckmeans clustering algorithm to create natural breaks
   var clusters = ss.ckmeans(domainArray, 5);
-  console.log(clusters);
 
   //reset domain array to cluster minimums
   domainArray = clusters.map(function(d){
@@ -206,8 +215,6 @@ function setChart(csvData, colorScale){
       .attr("height", chartInnerHeight)
       .attr("transform", translate);
 
-
-
   //set bars for each state
   var bars = chart.selectAll(".bars")
       .data(csvData)
@@ -217,9 +224,15 @@ function setChart(csvData, colorScale){
         return b[expressed]-a[expressed]
       })
       .attr("class", function(d){
-        return "bars " + d.GEOID;
+        return "bars a" + d.GEOID;
       })
-      .attr("width", chartInnerWidth/csvData.length-1);
+      .attr("width", chartInnerWidth/csvData.length-1)
+      .on("mouseover", highlight)
+      .on("mouseout", dehighlight)
+      .on("mousemove", moveLabel);
+
+  var desc = bars.append("desc")
+      .text('{"stroke": "#000", "stroke-width": "0.5px"}');
 
   //create a text element for the chart title
   var chartTitle = chart.append("text")
@@ -282,6 +295,8 @@ function changeAttribute(attribute, csvData){
 
   //recolor enumeration units
   var states = d3.selectAll(".states")
+      .transition()
+      .duration(1000)
       .style("fill", function(d){
         return choropleth(d.properties, colorScale)
       });
@@ -289,9 +304,13 @@ function changeAttribute(attribute, csvData){
   var bars = d3.selectAll(".bars")
       //re-sort bars
       .sort(function(a, b){
-
         return b[expressed]-a[expressed]
-      });
+      })
+      .transition()
+      .delay(function(d, i){
+        return i * 20
+      })
+      .duration(500);
 
   updateChart(bars, csvData.length, colorScale);
 };//end of changeAttribute
@@ -315,4 +334,61 @@ function updateChart(bars, n, colorScale){
     var chartTitle = d3.select(".chartTitle")
         .text(expressed + " per student");
 }; //end of updateChart
+
+function highlight(props){
+    var selected = d3.selectAll(".a"+props.GEOID)
+        .style("stroke", "blue")
+        .style("stroke-width", "2");
+
+    setLabel(props);
+};
+
+function dehighlight(props){
+    var selected = d3.selectAll(".a"+props.GEOID)
+        .style("stroke", function(){
+          return getStyle(this, "stroke")
+        })
+        .style("stroke-width", function(){
+          return getStyle(this, "stroke-width")
+        });
+
+    function getStyle(element, styleName){
+        var styleText = d3.select(element)
+            .select("desc")
+            .text();
+
+        var styleObject = JSON.parse(styleText);
+
+        return styleObject[styleName];
+    };
+
+    d3.select(".infolabel")
+        .remove();
+};// end of highlight and dehighlight functions
+
+function setLabel(props){
+    //label content
+    var labelAttribute = "<h1>" + props[expressed] + "</h1><b>" + expressed + "</b";
+
+    //create info label div
+    var infolabel = d3.select("body")
+        .append("div")
+        .attr("class", "infolabel")
+        .attr("id", props.GEOID + "_label")
+        .html(labelAttribute);
+
+    var stateName = infolabel.append("div")
+        .attr("class", "labelname")
+        .html(props.STATE);
+};//end of setLabel
+
+function moveLabel(){
+  //use coordinates of mousemove event to set label coordinates
+  var x = d3.event.clientX + 10,
+      y = d3.event.clientY - 75;
+
+  d3.select(".infolabel")
+      .style("left", x + "px")
+      .style("top", y + "px");
+};
 })();
