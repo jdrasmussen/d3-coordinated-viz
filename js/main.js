@@ -7,6 +7,11 @@ var attrArray = ["GEOID", "ENROLL", "TOTAL_REVENUE", "FEDERAL_REVENUE",
 "SUPPORT_SERVICES_EXPENDITURE", "AVG_READING_4_SCORE", "AVG_READING_8_SCORE",
 "AVG_MATH_4_SCORE", "AVG_MATH_8_SCORE"];
 
+var attrLabels = ["GEOID", "Student Enrollment", "Total Revenue", "Federal Revenue",
+"State Revenue", "Local Revenue", "Total Expenditure", "Instruction Expenditure",
+"Support Services Expenditure", "AVG_READING_4_SCORE", "AVG_READING_8_SCORE",
+"AVG_MATH_4_SCORE", "AVG_MATH_8_SCORE"];
+
 var expressed = attrArray[2];
 
 //set chart dimensions
@@ -157,7 +162,7 @@ function setMap(){
       .range(colorClasses);
 
   //build array of all values of the expressed attribute
-  var domainArray = [];
+  domainArray = [];
   for (var i=0; i<data.length; i++){
     var val = parseFloat(data[i][expressed]);
     domainArray.push(val);
@@ -172,7 +177,7 @@ function setMap(){
   });
   //remove first value from domain array to create class break points
   domainArray.shift();
-  console.log(domainArray)
+  //console.log(domainArray)
 
   //assign array of expressed values as scale domain
   colorScale.domain(domainArray);
@@ -227,7 +232,8 @@ function setChart(csvData, colorScale){
       .text('{"stroke": "#000", "stroke-width": "0.5px"}');
 
   //create a text element for the chart title
-  var chartTitle = chart.append("text")
+  var chartTitle = d3.select("#infodiv")
+      .append("text")
       .attr("x", 80)
       .attr("y", 40)
       .attr("class", "chartTitle")
@@ -401,16 +407,16 @@ function moveLabel(){
 };
 
 function createLegend(colorScale){
-  console.log(colorScale);
+  console.log(domainArray);
   var svg = d3.select("svg");
 
   svg.append("g")
     .attr("class", "legend")
-    .attr("transform", "translate(20,20)");
+    .attr("transform", "translate("+mapWidth*0.85+",350)");
 
   var legend = d3.legend.color()
     //.labelFormat(d3.format(".2f"))
-    .labels(["$0 to $10.64", "$10.65 to $13.28", "$13.29 to $16.54", "$16.55 to $20.90", "$20.91 +"])
+    .labels(["$0 to $"+domainArray[0], "$"+domainArray[0]+" to $"+domainArray[1], "$"+domainArray[1]+" to $"+domainArray[2], "$"+domainArray[2]+" to $"+domainArray[3], "$"+domainArray[3]+"+"])
     .ascending(true)
     .scale(colorScale);
 
