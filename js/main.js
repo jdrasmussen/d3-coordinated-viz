@@ -2,12 +2,7 @@
 (function(){
 //pseudo-global variables
 //variables for data join
-var attrArray = ["GEOID", "ENROLL", "TOTAL_REVENUE", "FEDERAL_REVENUE",
-"STATE_REVENUE", "LOCAL_REVENUE", "TOTAL_EXPENDITURE", "INSTRUCTION_EXPENDITURE",
-"SUPPORT_SERVICES_EXPENDITURE", "AVG_READING_4_SCORE", "AVG_READING_8_SCORE",
-"AVG_MATH_4_SCORE", "AVG_MATH_8_SCORE"];
-
-var attrLabels = ["GEOID", "Student Enrollment", "Total Revenue", "Federal Revenue",
+var attrArray = ["ENROLL", "Total Revenue", "Federal Revenue",
 "State Revenue", "Local Revenue", "Total Expenditure", "Instruction Expenditure",
 "Support Services Expenditure", "AVG_READING_4_SCORE", "AVG_READING_8_SCORE",
 "AVG_MATH_4_SCORE", "AVG_MATH_8_SCORE"];
