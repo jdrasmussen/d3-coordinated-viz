@@ -6,7 +6,8 @@
 		<title></title>
 
 		<!--put your external stylesheet links here-->
-
+		<link rel="stylesheet" href="css/bootstrap.min.css">
+		<link rel="stylesheet" href="css/bootstrap-theme.min.css">
 		<link rel="stylesheet" href="css/style.css">
 		<!--[if IE<9]>
 			<link rel="stylesheet" href="css/style.ie.css">
@@ -14,9 +15,15 @@
 	</head>
 
 	<body>
-		<div id="mydiv">
+		<div class="jumbotron jumbotron-fluid text-center">
+      <div class="container">
+        <h2>Education Funding and Spending</h2>
+      </div>
+	 	</div>
+		<div id="infodiv" class = "container">
 
 		</div>
+		<div id="legend"></div>
 		<!--put your initial page content here-->
 
 		<!--you can also use this space for internal scripts or stylesheets;
@@ -28,6 +35,8 @@
 		<script type="text/javascript" src="lib/d3-queue.v2.min.js"></script>
 		<script type="text/javascript" src="lib/topojson.min.js"></script>
 		<script src='https://unpkg.com/simple-statistics@7.0.2/dist/simple-statistics.min.js'></script>
+		<script type="text/javascript" src="lib/bootstrap.min.js"></script>
+		<script type="text/javascript" src="lib/d3-legend.min.js"></script>
 		<script type="text/javascript" src="js/main.js"></script>
 	</body>
 </html>

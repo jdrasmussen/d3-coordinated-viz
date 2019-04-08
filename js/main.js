@@ -7,37 +7,37 @@ var attrArray = ["GEOID", "ENROLL", "TOTAL_REVENUE", "FEDERAL_REVENUE",
 "SUPPORT_SERVICES_EXPENDITURE", "AVG_READING_4_SCORE", "AVG_READING_8_SCORE",
 "AVG_MATH_4_SCORE", "AVG_MATH_8_SCORE"];
 
-var expressed = attrArray[7];
+var expressed = attrArray[2];
 
 //set chart dimensions
-var chartWidth = 900,
-    chartHeight = 460;
+var chartWidth = window.innerWidth * 0.33,
+    chartHeight = 475;
     leftPadding = 25,
     rightPadding = 2,
     topBottomPadding = 5
     chartInnerWidth = chartWidth - leftPadding - rightPadding,
     chartInnerHeight = chartHeight - topBottomPadding * 2,
     translate = "translate("+ leftPadding +"," + topBottomPadding+ ")";
+
+//map frame dimensions
+var mapWidth = window.innerWidth * 0.6,
+    mapHeight = 475;
+
 //create linear scale for proportional bar sizing
 var yScale = d3.scale.linear()
-    .range([450, 0])
+    .range([465, 0])
     .domain([0, 25]); // set for min/max values of TOTAL_REVENUE
 
 window.onload = setMap();
 
 //set up choropleth map
 function setMap(){
-
-    //map frame dimensions
-    var width =900,
-        height = 475;
-
     //create new svg container for the map
     var map = d3.select("body")
         .append("svg")
         .attr("class", "map")
-        .attr("width", width)
-        .attr("height", height);
+        .attr("width", mapWidth)
+        .attr("height", mapHeight);
 
     //create Albers equal area projection
     var projection = d3.geo.albersUsa()
@@ -45,7 +45,7 @@ function setMap(){
         // .rotate([99.18, 0, 0])
         // .parallels([29.5, 45.5])
         .scale(999)
-        .translate([width/2, height/2]);
+        .translate([mapWidth/2, mapHeight/2]);
 
     var path = d3.geo.path()
       .projection(projection);
@@ -57,8 +57,6 @@ function setMap(){
         .await(callback);
 
     function callback(error, csvData, usa){
-
-      setGraticule(map, path);
 
       //translate us topojson
       var usa = topojson.feature(usa, usa.objects.US_states).features;
@@ -72,31 +70,14 @@ function setMap(){
       //function to create enumeration units
       setEnumerationUnits(usa, map, path, colorScale);
 
+      createLegend(colorScale);
+
       createDropdown(csvData);
 
       //add coordinated viz to the map - bar chart
       setChart(csvData, colorScale);
     };
   };// end of setMap function
-
-  function setGraticule(map, path){
-    //create graticule generator
-    var graticule = d3.geo.graticule()
-        .step([5,5]); //lines every 5 degrees
-
-    //create graticule background
-    var gratBackground = map.append("path")
-        .datum(graticule.outline())
-        .attr("class", "gratBackground")
-        .attr("d", path);
-
-    var gratLines = map.selectAll(".gratLines")
-        .data(graticule.lines())
-        .enter()
-        .append("path")
-        .attr("class", "gratLines")
-        .attr("d", path);
-  }; // end of setGraticule
 
   function joinData(usa, csvData){
     //loop through csv to assign each set of values to geojson region
@@ -114,18 +95,29 @@ function setMap(){
         if (geojsonKey==csvKey){
           //assign all attributes and values
           attrArray.forEach(function(attr){
-            var val = parseFloat(csvState[attr]); //get csv attribute value
+            if (attr=="GEOID"){
+              var val = csvState[attr];
+            }
+            else {
+              var val = parseFloat(csvState[attr]); //get csv attribute value
+            }
             geojsonProps[attr] = val; //add that value to the geojson properties
           });
         //console.log(geojsonProps);
         };
       };
     };
-   console.log(usa);
+   //console.log(usa);
    return usa;
  };// end of joinData
 
  function setEnumerationUnits(usa, map, path, colorScale){
+
+        var mapBackground = map.append("rect")
+            .attr("class", "mapBackground")
+            .attr("width", mapWidth)
+            .attr("height", mapHeight);
+            //.attr("transform", translate);
 
          //add US states to map
          var states = map.selectAll(".states")
@@ -180,6 +172,7 @@ function setMap(){
   });
   //remove first value from domain array to create class break points
   domainArray.shift();
+  console.log(domainArray)
 
   //assign array of expressed values as scale domain
   colorScale.domain(domainArray);
@@ -199,7 +192,6 @@ function choropleth(props, colorScale){
 };
 
 function setChart(csvData, colorScale){
-
 
   //create second svg element for the chart
   var chart = d3.select("body")
@@ -264,7 +256,7 @@ function setChart(csvData, colorScale){
 
 function createDropdown(csvData){
     //add select Element
-    var dropdown = d3.select("body")
+    var dropdown = d3.select("#infodiv")
         .append("select")
         .attr("class", "dropdown")
         .on("change", function(){
@@ -321,7 +313,7 @@ function updateChart(bars, n, colorScale){
       return i * (chartInnerWidth / n) + leftPadding;
     })
     .attr("height", function(d, i){
-      return 450 - yScale(parseFloat(d[expressed]));
+      return 465 - yScale(parseFloat(d[expressed]));
     })
     .attr("y", function(d, i){
       return yScale(parseFloat(d[expressed])) +topBottomPadding;
@@ -333,9 +325,12 @@ function updateChart(bars, n, colorScale){
 
     var chartTitle = d3.select(".chartTitle")
         .text(expressed + " per student");
+
+    createLegend(colorScale);
 }; //end of updateChart
 
 function highlight(props){
+    //console.log(props.GEOID);
     var selected = d3.selectAll(".a"+props.GEOID)
         .style("stroke", "blue")
         .style("stroke-width", "2");
@@ -388,7 +383,7 @@ function moveLabel(){
       .node()
       .getBoundingClientRect()
       .width;
-  
+
   //use coordinates of mousemove event to set label coordinates
   var x1 = d3.event.clientX + 10,
       y1 = d3.event.clientY - 75,
@@ -403,5 +398,23 @@ function moveLabel(){
   d3.select(".infolabel")
       .style("left", x + "px")
       .style("top", y + "px");
+};
+
+function createLegend(colorScale){
+  console.log(colorScale);
+  var svg = d3.select("svg");
+
+  svg.append("g")
+    .attr("class", "legend")
+    .attr("transform", "translate(20,20)");
+
+  var legend = d3.legend.color()
+    //.labelFormat(d3.format(".2f"))
+    .labels(["$0 to $10.64", "$10.65 to $13.28", "$13.29 to $16.54", "$16.55 to $20.90", "$20.91 +"])
+    .ascending(true)
+    .scale(colorScale);
+
+  svg.select(".legend")
+    .call(legend);
 };
 })();
