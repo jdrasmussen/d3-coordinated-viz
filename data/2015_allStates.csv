@@ -1,4 +1,4 @@
-﻿GEOID,STATE,Enrollment,Total Revenue,Federal Revenue,State Revenue,Local Revenue,Total Expenditure,Instruction Expenditure,Support Services Expenditure,AVG_READING_4_SCORE,AVG_READING_8_SCORE,AVG_MATH_4_SCORE,AVG_MATH_8_SCORE
+﻿GEOID,STATE,Enrollment,Total Revenue,Federal Revenue,State Revenue,Local Revenue,Total Expenditure,Instruction Expenditure,Support Services Expenditure,Average Grade 4 Reading Score,Average Grade 8 Reading Score,Average Grade 4 Math Score,Average Grade 8 Math Score
 01,ALABAMA,734974,10.01,1.08,5.55,3.38,10.21,5.19,3.29,217.05,269.02,230.98,266.56
 02,ALASKA,130755,22.34,2.63,15.5,4.21,22.7,11.35,8.17,212.79,258.75,236.33,280.49
 04,ARIZONA,944978,8.71,1.16,3.42,4.13,8.36,4.07,3.05,215.31,260.32,237.61,282.92

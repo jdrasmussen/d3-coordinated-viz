@@ -1,14 +1,14 @@
 /* stylesheet by Joe Rasmussen, 2019*/
+
 .states {
   stroke: #000;
-  stroke-width: 0.5px;
+  stroke-width: 0.25px;
   stroke-linecap: round;
 }
 
 .map {
     border: medium solid #999;
     margin: 10px 0 0 20px;
-
 }
 
 .mapBackground{
@@ -24,7 +24,7 @@
     font-family: serif;
     font-size: 1.25em;
     font-weight: bold;
-    margin-left: 100px;
+    margin-left: 20px;
 }
 
 .chartBackground {
@@ -61,19 +61,23 @@
   padding: 2px;
   border: 1px solid #999;
   box-shadow: 2px 2px 4px #999;
+  margin-left: 200px;
 }
+
 
 option {
   font-weight: normal;
+  font-family: Georgia, serif;
 }
 
 .infolabel {
     position: absolute;
     height: 50px;
     min-width: 100px;
-    color: #fff;
-    background-color: #000;
-    border: solid thin #fff;
+    color: #000;
+    background-color: #E7F0EB;
+    border: solid thin #000;
+    border-radius: 10px;
     padding: 5px 10px;
     top: -75px;
 }
@@ -83,12 +87,22 @@ option {
     padding: 0;
     display: inline-block;
     line-height: 1em;
+    font-family: Georgia, serif;
+}
+
+.infolabel h1 {
+    margin: 0 20px 0 0;
+    padding: 0;
+    display: inline-block;
+    line-height: 1em;
+    font-size: 14px;
+    font-family: Georgia, serif;
 }
 
 .jumbotron {
   background-color: #6C8275;
   color: white;
-  font-family: serif;
+  font-family: Georgia, serif;
 }
 
 body {

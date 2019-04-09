@@ -2,12 +2,12 @@
 (function(){
 //pseudo-global variables
 //variables for data join
-var attrArray = ["ENROLL", "Total Revenue", "Federal Revenue",
+var attrArray = ["Total Revenue", "Federal Revenue",
 "State Revenue", "Local Revenue", "Total Expenditure", "Instruction Expenditure",
-"Support Services Expenditure", "AVG_READING_4_SCORE", "AVG_READING_8_SCORE",
-"AVG_MATH_4_SCORE", "AVG_MATH_8_SCORE"];
+"Support Services Expenditure", "Average Grade 4 Reading Score", "Average Grade 8 Reading Score",
+"Average Grade 4 Math Score", "Average Grade 8 Math Score"];
 
-var expressed = attrArray[2];
+var expressed = attrArray[0];
 
 //set chart dimensions
 var chartWidth = window.innerWidth * 0.33,
@@ -24,9 +24,16 @@ var mapWidth = window.innerWidth * 0.6,
     mapHeight = 475;
 
 //create linear scale for proportional bar sizing
+if(expressed.includes("score")){
+  var yScale = d3.scale.linear()
+      .range([465, 0])
+      .domain([0, 300]); // set for min/max values of TOTAL_REVENUE
+}
+else{
 var yScale = d3.scale.linear()
     .range([465, 0])
     .domain([0, 25]); // set for min/max values of TOTAL_REVENUE
+}
 
 window.onload = setMap();
 
@@ -309,6 +316,38 @@ function changeAttribute(attribute, csvData){
 };//end of changeAttribute
 
 function updateChart(bars, n, colorScale){
+    //console.log(expressed);
+    //reset scale based on variable
+    if(expressed.includes("Score")){
+      var chartTitle = d3.select(".chartTitle")
+          .text(expressed);
+
+      var yScale = d3.scale.linear()
+          .range([465, 0])
+          .domain([0, 300]); // set for min/max values oF test score attributes
+    }
+    else{
+      var chartTitle = d3.select(".chartTitle")
+          .text(expressed + " per student");
+
+      var yScale = d3.scale.linear()
+          .range([465, 0])
+          .domain([0, 25]); // set for min/max values of revenue/spending attributes
+    }
+
+    var chart = d3.select("chart");
+
+    var yAxis = d3.svg.axis()
+        .scale(yScale)
+        .orient("left");
+
+    //place yAxis
+    var axis = chart.append("g")
+        .attr("class", "axis")
+        .attr("transform", translate)
+        .call(yAxis);
+
+
     //position bars
     bars.attr("x", function(d,i){
       return i * (chartInnerWidth / n) + leftPadding;
@@ -324,8 +363,8 @@ function updateChart(bars, n, colorScale){
       return choropleth(d, colorScale);
     });
 
-    var chartTitle = d3.select(".chartTitle")
-        .text(expressed + " per student");
+    // var chartTitle = d3.select(".chartTitle")
+    //     .text(expressed + " per student");
 
     createLegend(colorScale);
 }; //end of updateChart
@@ -333,8 +372,8 @@ function updateChart(bars, n, colorScale){
 function highlight(props){
     //console.log(props.GEOID);
     var selected = d3.selectAll(".a"+props.GEOID)
-        .style("stroke", "blue")
-        .style("stroke-width", "2");
+        .style("stroke", "#E88648")
+        .style("stroke-width", "4");
 
     setLabel(props);
 };
@@ -363,8 +402,15 @@ function dehighlight(props){
 };// end of highlight and dehighlight functions
 
 function setLabel(props){
+  if(expressed.includes("Score")){
     //label content
-    var labelAttribute = "<h1>" + props[expressed] + "</h1><b>" + expressed + "</b";
+    var labelAttribute = "<h1>" + props[expressed] + "</h1><b>" + expressed + "</b>";
+  }
+  else{
+    //label content
+    var labelAttribute = "<h1>$" + props[expressed] + "</h1><b>" + expressed + "</b>";
+  }
+
 
     //create info label div
     var infolabel = d3.select("body")
@@ -375,7 +421,7 @@ function setLabel(props){
 
     var stateName = infolabel.append("div")
         .attr("class", "labelname")
-        .html(props.STATE);
+        .html("<h1>"+props.STATE+"</h1>");
 };//end of setLabel
 
 function moveLabel(){
@@ -402,7 +448,16 @@ function moveLabel(){
 };
 
 function createLegend(colorScale){
-  console.log(domainArray);
+  if(expressed.includes("Score")){
+    //label content
+    var labelArray = ["0 to "+domainArray[0],domainArray[0]+" to "+domainArray[1],domainArray[1]+" to "+domainArray[2],domainArray[2]+" to "+domainArray[3],domainArray[3]+"+"]
+  }
+  else{
+    //label content
+    var labelArray = ["$0 to $"+domainArray[0], "$"+domainArray[0]+" to $"+domainArray[1], "$"+domainArray[1]+" to $"+domainArray[2], "$"+domainArray[2]+" to $"+domainArray[3], "$"+domainArray[3]+"+"]
+  }
+
+  //console.log(domainArray);
   var svg = d3.select("svg");
 
   svg.append("g")
@@ -411,7 +466,7 @@ function createLegend(colorScale){
 
   var legend = d3.legend.color()
     //.labelFormat(d3.format(".2f"))
-    .labels(["$0 to $"+domainArray[0], "$"+domainArray[0]+" to $"+domainArray[1], "$"+domainArray[1]+" to $"+domainArray[2], "$"+domainArray[2]+" to $"+domainArray[3], "$"+domainArray[3]+"+"])
+    .labels(labelArray)
     .ascending(true)
     .scale(colorScale);
 
