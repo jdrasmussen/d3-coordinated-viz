@@ -2,38 +2,14 @@
 (function(){
 //pseudo-global variables
 //variables for data join
-var attrArray = ["Total Revenue", "Federal Revenue",
-"State Revenue", "Local Revenue", "Total Expenditure", "Instruction Expenditure",
-"Support Services Expenditure", "Average Grade 4 Reading Score", "Average Grade 8 Reading Score",
-"Average Grade 4 Math Score", "Average Grade 8 Math Score"];
+var attrArray = [];
 
 var expressed = attrArray[0];
-
-//set chart dimensions
-var chartWidth = window.innerWidth * 0.33,
-    chartHeight = 475;
-    leftPadding = 25,
-    rightPadding = 2,
-    topBottomPadding = 5
-    chartInnerWidth = chartWidth - leftPadding - rightPadding,
-    chartInnerHeight = chartHeight - topBottomPadding * 2,
-    translate = "translate("+ leftPadding +"," + topBottomPadding+ ")";
 
 //map frame dimensions
 var mapWidth = window.innerWidth * 0.6,
     mapHeight = 475;
 
-//create linear scale for proportional bar sizing
-if(expressed.includes("score")){
-  var yScale = d3.scale.linear()
-      .range([465, 0])
-      .domain([0, 300]); // set for min/max values of TOTAL_REVENUE
-}
-else{
-var yScale = d3.scale.linear()
-    .range([465, 0])
-    .domain([0, 25]); // set for min/max values of TOTAL_REVENUE
-}
 
 window.onload = setMap();
 
@@ -47,11 +23,8 @@ function setMap(){
         .attr("height", mapHeight);
 
     //create Albers equal area projection
-    var projection = d3.geo.albersUsa()
-        // .center([0,37.24])
-        // .rotate([99.18, 0, 0])
-        // .parallels([29.5, 45.5])
-        .scale(999)
+    var projection = d3.geo.albers()
+        //.center([43.784,88.788]) This isn't working
         .translate([mapWidth/2, mapHeight/2]);
 
     var path = d3.geo.path()
@@ -59,418 +32,42 @@ function setMap(){
 
     // use d3.queue to parallelize async data load
     d3_queue.queue()
-        .defer(d3.csv, "data/2015_allStates.csv") //load attributes from csv file
-        .defer(d3.json, "data/us_states.topojson") //load us background map
+        .defer(d3.json, "data/SenateDist02_12to20Results.topojson") //load WI election results
+        .defer(d3.json, "data/AssemblyDist02_12to20Results.topojson") //load WI election results
+        .defer(d3.json, "data/SenateDist11_12to20Results.topojson") //load WI election results
+        .defer(d3.json, "data/AssemblyDist11_12to20Results.topojson") //load WI election results
         .await(callback);
 
-    function callback(error, csvData, usa){
+    function callback(error, sd02, ad02, sd11, ad11){
 
-      //translate us topojson
-      var usa = topojson.feature(usa, usa.objects.US_states).features;
+      //get features from topojsons
+      var sd02 = topojson.feature(sd02, sd02.objects.SenateDist02_12to20Results).features;
+      var ad02 = topojson.feature(ad02, ad02.objects.AssemblyDist02_12to20Results).features;
+      var sd11 = topojson.feature(sd11, sd11.objects.SenateDist11_12to20Results).features;
+      var ad11 = topojson.feature(ad11, ad11.objects.AssemblyDist11_12to20Results).features;
 
-      //create the color scale
-      var colorScale = makeColorScale(csvData);
+      console.log(sd02);
 
-      //join data
-      stateData = joinData(usa, csvData);
+      var mapBackground = map.append("rect")
+          .attr("class", "mapBackground")
+          .attr("width", mapWidth)
+          .attr("height", mapHeight);
+          //.attr("transform", translate);
 
-      //function to create enumeration units
-      setEnumerationUnits(usa, map, path, colorScale);
+       //add US states to map
+       var wisconsin = map.selectAll(".wisconsin")
+           .data(sd02)
+           .enter()
+           .append("path")
+           .attr("class", function(d){
+             return "ass_dist a" + d.properties.SENATE;
+             console.log(d.properties.SENATE);
+           })
+           .attr("d", path);
 
-      createLegend(colorScale);
-
-      createDropdown(csvData);
-
-      //add coordinated viz to the map - bar chart
-      setChart(csvData, colorScale);
     };
   };// end of setMap function
 
-  function joinData(usa, csvData){
-    //loop through csv to assign each set of values to geojson region
-    for (var i=0; i<csvData.length; i++){
-      var csvState = csvData[i]; //assign csv row to variable
-      var csvKey = csvState.GEOID; //the primary key for states
-
-      //loop through geojson states  to find correct state
-      for (var a=0; a<usa.length;a++){
-        var geojsonProps = usa[a].properties; //the properties for current state in geojson
-        var geojsonKey = geojsonProps.GEOID;
-        //console.log(geojsonKey);
-
-        //when keys match, transfer csv data to geojson properties objects
-        if (geojsonKey==csvKey){
-          //assign all attributes and values
-          attrArray.forEach(function(attr){
-            if (attr=="GEOID"){
-              var val = csvState[attr];
-            }
-            else {
-              var val = parseFloat(csvState[attr]); //get csv attribute value
-            }
-            geojsonProps[attr] = val; //add that value to the geojson properties
-          });
-        //console.log(geojsonProps);
-        };
-      };
-    };
-   //console.log(usa);
-   return usa;
- };// end of joinData
-
- function setEnumerationUnits(usa, map, path, colorScale){
-
-        var mapBackground = map.append("rect")
-            .attr("class", "mapBackground")
-            .attr("width", mapWidth)
-            .attr("height", mapHeight);
-            //.attr("transform", translate);
-
-         //add US states to map
-         var states = map.selectAll(".states")
-             .data(usa)
-             .enter()
-             .append("path")
-             .attr("class", function(d){
-               return "states a" + d.properties.GEOID;
-             })
-             .attr("d", path)
-             .style("fill", function(d){
-               return choropleth(d.properties, colorScale);
-             })
-             .on("mouseover", function(d){
-               highlight(d.properties);
-             })
-             .on("mouseout", function(d){
-               dehighlight(d.properties)
-             })
-             .on("mousemove", moveLabel);
-
-          var desc = states.append("desc")
-              .text('{"stroke": "#000", "stroke-width": "0.5px"}');
- };
-
- function makeColorScale(data){
-   var colorClasses = [
-     "#edf8e9",
-     "#bae4b3",
-     "#74c476",
-     "#31a354",
-     "#006d2c"
-   ];
-
-   //create color scale generator
-   var colorScale = d3.scale.threshold()
-      .range(colorClasses);
-
-  //build array of all values of the expressed attribute
-  domainArray = [];
-  for (var i=0; i<data.length; i++){
-    var val = parseFloat(data[i][expressed]);
-    domainArray.push(val);
-  };
-
-  //cluster data using ckmeans clustering algorithm to create natural breaks
-  var clusters = ss.ckmeans(domainArray, 5);
-
-  //reset domain array to cluster minimums
-  domainArray = clusters.map(function(d){
-    return d3.min(d);
-  });
-  //remove first value from domain array to create class break points
-  domainArray.shift();
-  //console.log(domainArray)
-
-  //assign array of expressed values as scale domain
-  colorScale.domain(domainArray);
-
-  return colorScale;
-};
-
-function choropleth(props, colorScale){
-  //make sure attribute value is a number
-  var val = parseFloat(props[expressed]);
-  //if attribute value exists, assign a color, otherwise assign gray
-  if (typeof val == 'number' && !isNaN(val)){
-    return colorScale(val);
-  } else {
-    return "#CCC";
-  };
-};
-
-function setChart(csvData, colorScale){
-
-  //create second svg element for the chart
-  var chart = d3.select("body")
-      .append("svg")
-      .attr("width", chartWidth)
-      .attr("height", chartHeight)
-      .attr("class", "chart");
-
-  //create a rectangle for chart background fill
-  var chartBackground = chart.append("rect")
-      .attr("class", "chartBackground")
-      .attr("width", chartInnerWidth)
-      .attr("height", chartInnerHeight)
-      .attr("transform", translate);
-
-  //set bars for each state
-  var bars = chart.selectAll(".bars")
-      .data(csvData)
-      .enter()
-      .append("rect")
-      .sort(function(a, b){
-        return b[expressed]-a[expressed]
-      })
-      .attr("class", function(d){
-        return "bars a" + d.GEOID;
-      })
-      .attr("width", chartInnerWidth/csvData.length-1)
-      .on("mouseover", highlight)
-      .on("mouseout", dehighlight)
-      .on("mousemove", moveLabel);
-
-  var desc = bars.append("desc")
-      .text('{"stroke": "#000", "stroke-width": "0.5px"}');
-
-  //create a text element for the chart title
-  var chartTitle = d3.select("#infodiv")
-      .append("text")
-      .attr("x", 80)
-      .attr("y", 40)
-      .attr("class", "chartTitle")
 
 
-  //create a vertical axis generator
-  var yAxis = d3.svg.axis()
-      .scale(yScale)
-      .orient("left");
-
-  //place yAxis
-  var axis = chart.append("g")
-      .attr("class", "axis")
-      .attr("transform", translate)
-      .call(yAxis);
-
-  //create frame for chart border
-  var chartFrame = chart.append("rect")
-      .attr("class", "chartFrame")
-      .attr("width", chartInnerWidth)
-      .attr("height", chartInnerHeight)
-      .attr("transform", translate);
-
-  updateChart(bars, csvData.length, colorScale);
-}; //end of setChart
-
-function createDropdown(csvData){
-    //add select Element
-    var dropdown = d3.select("#infodiv")
-        .append("select")
-        .attr("class", "dropdown")
-        .on("change", function(){
-          //console.log("the attribute selection changed");
-          changeAttribute(this.value, csvData)
-        });
-
-    //add initial option
-    var titleOption = dropdown.append("option")
-        .attr("class", "titleOption")
-        .attr("disabled", "true")
-        .text("Select Attribute");
-
-    var attrOptions = dropdown.selectAll("attrOptions")
-        .data(attrArray)
-        .enter()
-        .append("option")
-        .attr("value", function(d){return d})
-        .text(function(d){return d});
-};//end of createDropdown
-
-function changeAttribute(attribute, csvData){
-  //change the expressed attribute
-  expressed = attribute;
-
-  //recreate the color scale
-  var colorScale = makeColorScale(csvData);
-
-  //recolor enumeration units
-  var states = d3.selectAll(".states")
-      .transition()
-      .duration(1000)
-      .style("fill", function(d){
-        return choropleth(d.properties, colorScale)
-      });
-
-  var bars = d3.selectAll(".bars")
-      //re-sort bars
-      .sort(function(a, b){
-        return b[expressed]-a[expressed]
-      })
-      .transition()
-      .delay(function(d, i){
-        return i * 20
-      })
-      .duration(500);
-
-  updateChart(bars, csvData.length, colorScale);
-};//end of changeAttribute
-
-function updateChart(bars, n, colorScale){
-    //console.log(expressed);
-    //reset scale based on variable
-    if(expressed.includes("Score")){
-      var chartTitle = d3.select(".chartTitle")
-          .text(expressed);
-
-      var yScale = d3.scale.linear()
-          .range([465, 0])
-          .domain([0, 300]); // set for min/max values oF test score attributes
-    }
-    else{
-      var chartTitle = d3.select(".chartTitle")
-          .text(expressed + " per student");
-
-      var yScale = d3.scale.linear()
-          .range([465, 0])
-          .domain([0, 25]); // set for min/max values of revenue/spending attributes
-    }
-
-    var chart = d3.select("chart");
-
-    var yAxis = d3.svg.axis()
-        .scale(yScale)
-        .orient("left");
-
-    //place yAxis
-    var axis = chart.append("g")
-        .attr("class", "axis")
-        .attr("transform", translate)
-        .call(yAxis);
-
-
-    //position bars
-    bars.attr("x", function(d,i){
-      return i * (chartInnerWidth / n) + leftPadding;
-    })
-    .attr("height", function(d, i){
-      return 465 - yScale(parseFloat(d[expressed]));
-    })
-    .attr("y", function(d, i){
-      return yScale(parseFloat(d[expressed])) +topBottomPadding;
-    })
-    //recolor bars
-    .style("fill", function(d){
-      return choropleth(d, colorScale);
-    });
-
-    // var chartTitle = d3.select(".chartTitle")
-    //     .text(expressed + " per student");
-
-    createLegend(colorScale);
-}; //end of updateChart
-
-function highlight(props){
-    //console.log(props.GEOID);
-    var selected = d3.selectAll(".a"+props.GEOID)
-        .style("stroke", "#E88648")
-        .style("stroke-width", "4");
-
-    setLabel(props);
-};
-
-function dehighlight(props){
-    var selected = d3.selectAll(".a"+props.GEOID)
-        .style("stroke", function(){
-          return getStyle(this, "stroke")
-        })
-        .style("stroke-width", function(){
-          return getStyle(this, "stroke-width")
-        });
-
-    function getStyle(element, styleName){
-        var styleText = d3.select(element)
-            .select("desc")
-            .text();
-
-        var styleObject = JSON.parse(styleText);
-
-        return styleObject[styleName];
-    };
-
-    d3.select(".infolabel")
-        .remove();
-};// end of highlight and dehighlight functions
-
-function setLabel(props){
-  if(expressed.includes("Score")){
-    //label content
-    var labelAttribute = "<h1>" + props[expressed] + "</h1><b>" + expressed + "</b>";
-  }
-  else{
-    //label content
-    var labelAttribute = "<h1>$" + props[expressed] + "</h1><b>" + expressed + "</b>";
-  }
-
-
-    //create info label div
-    var infolabel = d3.select("body")
-        .append("div")
-        .attr("class", "infolabel")
-        .attr("id", props.GEOID + "_label")
-        .html(labelAttribute);
-
-    var stateName = infolabel.append("div")
-        .attr("class", "labelname")
-        .html("<h1>"+props.STATE+"</h1>");
-};//end of setLabel
-
-function moveLabel(){
-  //get width of label
-  var labelWidth = d3.select(".infolabel")
-      .node()
-      .getBoundingClientRect()
-      .width;
-
-  //use coordinates of mousemove event to set label coordinates
-  var x1 = d3.event.clientX + 10,
-      y1 = d3.event.clientY - 75,
-      x2 = d3.event.clientX - labelWidth - 10,
-      y2 = d3.event.clientY + 25;
-
-  //horizontal label coordinate, testing for overflow
-  var x = d3.event.clientX > window.innerWidth - labelWidth - 20 ? x2 : x1;
-  //verticl label coordinate, testing for overflow
-  var y = d3.event.clientY < 75 ? y2 : y1;
-
-  d3.select(".infolabel")
-      .style("left", x + "px")
-      .style("top", y + "px");
-};
-
-function createLegend(colorScale){
-  if(expressed.includes("Score")){
-    //label content
-    var labelArray = ["0 to "+domainArray[0],domainArray[0]+" to "+domainArray[1],domainArray[1]+" to "+domainArray[2],domainArray[2]+" to "+domainArray[3],domainArray[3]+"+"]
-  }
-  else{
-    //label content
-    var labelArray = ["$0 to $"+domainArray[0], "$"+domainArray[0]+" to $"+domainArray[1], "$"+domainArray[1]+" to $"+domainArray[2], "$"+domainArray[2]+" to $"+domainArray[3], "$"+domainArray[3]+"+"]
-  }
-
-  //console.log(domainArray);
-  var svg = d3.select("svg");
-
-  svg.append("g")
-    .attr("class", "legend")
-    .attr("transform", "translate("+mapWidth*0.85+",350)");
-
-  var legend = d3.legend.color()
-    //.labelFormat(d3.format(".2f"))
-    .labels(labelArray)
-    .ascending(true)
-    .scale(colorScale);
-
-  svg.select(".legend")
-    .call(legend);
-};
 })();
