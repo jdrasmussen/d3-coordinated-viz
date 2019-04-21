@@ -7,8 +7,8 @@ var attrArray = [];
 var expressed = attrArray[0];
 
 //map frame dimensions
-var mapWidth = window.innerWidth * 0.6,
-    mapHeight = 475;
+var mapWidth = window.innerWidth * 0.5,
+    mapHeight = 700;
 
 
 window.onload = setMap();
@@ -24,7 +24,8 @@ function setMap(){
 
     //create Albers equal area projection
     var projection = d3.geo.albers()
-        //.center([43.784,88.788]) This isn't working
+        .scale(6500)
+        .center([6,44.6]) //This isn't working
         .translate([mapWidth/2, mapHeight/2]);
 
     var path = d3.geo.path()
@@ -46,7 +47,10 @@ function setMap(){
       var sd11 = topojson.feature(sd11, sd11.objects.SenateDist11_12to20Results).features;
       var ad11 = topojson.feature(ad11, ad11.objects.AssemblyDist11_12to20Results).features;
 
-      console.log(sd02);
+      //console.log(sd02);
+
+      //create the color scale
+      var colorScale = makeColorScale();
 
       var mapBackground = map.append("rect")
           .attr("class", "mapBackground")
@@ -61,13 +65,45 @@ function setMap(){
            .append("path")
            .attr("class", function(d){
              return "ass_dist a" + d.properties.SENATE;
-             console.log(d.properties.SENATE);
            })
-           .attr("d", path);
+           .attr("d", path)
+           .style("fill", function(d){
+             return choropleth(d.properties, colorScale);
+           });
 
     };
   };// end of setMap function
 
+  function makeColorScale(){
+     var colorClasses = [
+       "#de2d26", // very strong gop
+       "#fcae91", // strong gop
+       "#9e9ac8", // middle
+       "#bdd7e7", // strong dem
+       "#3182bd" // very strong dem
+     ];
 
+     //create color scale generator
+     var colorScale = d3.scale.threshold()
+        .domain(0.3,0.45,0.55,0.7)
+        .range(colorClasses);
+
+    return colorScale;
+  };//end of makeColorScale
+
+  function choropleth(props, colorScale){
+  //make sure attribute value is a number
+  // THIS WILL NEED TO BE MADE MORE COMPLEX TO ACCOUNT FOR DIFFERENT ELECTIONS ETC.
+  //console.log(props);
+  var val = parseFloat(props["PREDEM16"])/parseFloat(props["PRETOT16"]);
+  console.log(val);
+  console.log(colorScale(val));
+  //if attribute value exists, assign a color, otherwise assign gray
+  if (typeof val == 'number' && !isNaN(val)){
+    return colorScale(val);
+  } else {
+    return "#CCC";
+  };
+};
 
 })();
