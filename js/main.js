@@ -85,7 +85,7 @@ function setMap(){
 
      //create color scale generator
      var colorScale = d3.scale.threshold()
-        .domain(0.3,0.45,0.55,0.7)
+        .domain([0.3,0.45,0.55,0.7])
         .range(colorClasses);
 
     return colorScale;
@@ -95,10 +95,11 @@ function setMap(){
   //make sure attribute value is a number
   // THIS WILL NEED TO BE MADE MORE COMPLEX TO ACCOUNT FOR DIFFERENT ELECTIONS ETC.
   //console.log(props);
+  // calculate % democratic vote
   var val = parseFloat(props["PREDEM16"])/parseFloat(props["PRETOT16"]);
   console.log(val);
   console.log(colorScale(val));
-  //if attribute value exists, assign a color, otherwise assign gray
+  //if attribute value exists, assign a color, otherwise assign gray in case of bad values
   if (typeof val == 'number' && !isNaN(val)){
     return colorScale(val);
   } else {
